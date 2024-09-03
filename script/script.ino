@@ -1,6 +1,4 @@
-#define BLYNK_TEMPLATE_ID "TMPL2FqJoFAuV"
-#define BLYNK_TEMPLATE_NAME "Temperatue and Humidity"
-#define BLYNK_AUTH_TOKEN "_tvvipSw47vbnSkJXi0OMXoiYYz8GTBO"
+#include <project_secrets.h>
 
 /* Change these values based on your calibration values */
 #define GrainWet 890   // Define max value we consider soil 'wet'
@@ -39,20 +37,6 @@ LiquidCrystal_I2C lcd(0x27,16,2);
 
 #define DHTPIN 2     // Digital pin connected to the DHT sensor D4
 #define BLYNK_PRINT Serial
-
-// 1. Your WiFi credentials.
-const char* WIFI_SSID = "SmartStorage";
-const char* WIFI_PASSWORD = "";
-
-/* 2. Define the API Key */
-#define API_KEY "AIzaSyBSdMPjGHDJXoo7Rl76gjSG6EIvq70Dy0M"
-
-/* 3. Define the RTDB URL */
-#define DATABASE_URL "https://iot-based-storage-system-default-rtdb.firebaseio.com/"
-
-/* 4. Define the user Email and password that alreadey registerd or added in your project */
-#define USER_EMAIL "test@gmail.com"
-#define USER_PASSWORD "test_test"
 
 //Define Firebase Data object
 FirebaseData fbdo;
@@ -124,7 +108,21 @@ void setup() {
   mySerial.println("AT");
   updateSerial();
 
-  mySerial.println("ATE1");
+  Serial.println();
+
+  mySerial.println("AT+CSQ");
+  updateSerial();
+
+  mySerial.println("AT+CCID");
+  updateSerial();
+
+  mySerial.println("AT+CREG?");
+  updateSerial();
+
+  mySerial.println("ATI");
+  updateSerial();
+
+  mySerial.println("AT+CBC");
   updateSerial();
 
   mySerial.println("AT+CMGF=1");  // Set SMS mode to text
@@ -203,11 +201,6 @@ void loop() {
     smsSent = false;  // Reset smsSent if conditions are normal
   }
 
-  // // Compute heat index in Fahrenheit (the default)
-  // float hif = dht.computeHeatIndex(f, h);
-  // // Compute heat index in Celsius (isFahreheit = false)
-  // float hic = dht.computeHeatIndex(t, h, false);
-
   Blynk.virtualWrite(V0, t);
   Blynk.virtualWrite(V1, h);
   Blynk.virtualWrite(V2, moisturePercent);
@@ -217,13 +210,6 @@ void loop() {
   lcd.print("Temp: " + String(t) + " C");
   lcd.setCursor(2,1);   //Set cursor to character 2 on line 1
   lcd.print("Hum: " + String(h) + " %");
-  // delay(2000);
-  //lcd.init();
-  // lcd.clear();
-  // lcd.setCursor(2,0);
-  // lcd.print("moist: ");
-  // lcd.print(moisturePercent);
-  // lcd.print("%");
 
   Serial.println(String("Humidity: ") + h + "%" + " __ Temperature: " + t + "°C __ " + f + "°F");
 
@@ -252,13 +238,12 @@ void loop() {
 }
 
 void send_sms(float t, float h, int moisturePercent) {
-  //sim800L.print("AT+CMGS=\"+2349072229642\"\r");  // Replace with the farmer's phone number
   mySerial.println("AT+CMGS=\"+2349072229642\"");
   updateSerial();
 
   unsigned long currentMillis = millis();
 
-  if(t && h && moisturePercent) {
+  if (t > 0 && h > 0 && moisturePercent >= 0) {
     if (!smsSent || (currentMillis - lastSmsSentMillis > smsInterval)) {
       String smsMessage = "Danger, storage conditions above threshold";
       mySerial.print(smsMessage);
@@ -273,15 +258,8 @@ void send_sms(float t, float h, int moisturePercent) {
     mySerial.write(0x1A);  // ASCII code for CTRL+Z to send the SMS
     updateSerial();
   }
-
-  // String smsMessage = "Current Temperature: " + String(t) + "°C, ";
-  // smsMessage += "Current Humidity: " + String(h) + "%, ";
-  // smsMessage += "Current Moisture: " + String(moisturePercent) + "%";
-
-  // mySerial.print(smsMessage);
-  // mySerial.write(0x1A);  // ASCII code for CTRL+Z to send the SMS
-  // updateSerial();
 }
+
 
 void updateSerial() {
   delay(500);
